@@ -12,13 +12,14 @@
 #import <OpenGLES/ES1/gl.h>
 #import <OpenGLES/ES1/glext.h>
 #import "FLAPIX.h"
+#import "BlowHistory.h"
 
 /*
 This class wraps the CAEAGLLayer from CoreAnimation into a convenient UIView subclass.
 The view content is basically an EAGL surface you render your OpenGL scene into.
 Note that setting the view non-opaque will only work if the EAGL surface has an alpha channel.
 */
-@interface NeedleGL : UIView {
+@interface NeedleGL : UIView <BlowHistoryDelegate> {
     
 @private
     /* The pixel dimensions of the backbuffer */
@@ -36,7 +37,11 @@ Note that setting the view non-opaque will only work if the EAGL surface has an 
     NSTimer *animationTimer;
     NSTimeInterval animationInterval;
     
-    
+    // history
+    BlowHistory *history;
+    int historyDuration;
+    double higherBar;
+
 }
 
 @property NSTimeInterval animationInterval;
@@ -46,11 +51,12 @@ Note that setting the view non-opaque will only work if the EAGL surface has an 
 
 - (void)startAnimation;
 - (void)stopAnimation;
-- (void)drawView;
 - (void)setupView;
 - (void)checkGLError:(BOOL)visibleCheck;
 
-
 +(float)frequencyToAngle:(double)freq;
+
+-(void) historyChange:(id*) history;
+-(void) reloadFromDB;
 
 @end

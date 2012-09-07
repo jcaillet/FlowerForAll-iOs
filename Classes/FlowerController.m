@@ -19,7 +19,8 @@
 
 @implementation FlowerController
 
-@synthesize mainView, menuButton, needleGL, historyView; 
+@synthesize mainView, menuButton, needleGL;
+//@synthesize historyView; 
 static FlowerController *singleton;
 static UIViewController *currentMainController ;
 static MenuView* activitiesViewController;
@@ -189,7 +190,6 @@ static NSMutableDictionary* appList;
     
 }
 
-
 // get action sheet answers
 -(void) actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex{
     NSLog(@"actionSheet %i", buttonIndex);
@@ -230,11 +230,11 @@ static NSMutableDictionary* appList;
 
 - (void)startStopButtonRefresh:(NSNotification *)notification {
     if ([[FlowerController currentFlapix] running]) {
-        [self.view bringSubviewToFront:historyView];
+//        [self.view bringSubviewToFront:historyView];
         [self.view bringSubviewToFront:menuButton];
+        [self.view sendSubviewToBack:startButton];
     } else {
         [self.view bringSubviewToFront:startButton];
-        
     }
 }
 
@@ -265,7 +265,7 @@ static NSMutableDictionary* appList;
     [self.mainView addSubview:currentMainController.view]; //needed to finish pushMenu int process
     
     // Plug an iPhone
-    CGRect plugFrame = historyView.frame; 
+    CGRect plugFrame = needleGL.frame; 
 
     startButton = [[UIButton alloc] initWithFrame:plugFrame];
     UIImage *buttonImageHighlighted = [UIImage imageNamed: @"jack.png"];
@@ -332,7 +332,7 @@ static NSMutableDictionary* appList;
     mainView = nil;
     needleGL = nil;
     startButton = nil;
-    historyView = nil;
+//    historyView = nil;
 }
 
 # pragma mark Quit

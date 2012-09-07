@@ -10,19 +10,19 @@
 
 #import "NeedleGL.h"
 #import "FLAPIX.h"
-#import "HistoryView.h"
+//#import "HistoryView.h"
 #import "ParametersApp.h"
-#import "HistoryView.h"
+//#import "HistoryView.h"
 
 @interface FlowerController : UIViewController <UIActionSheetDelegate> {
     UIView *mainView;
     NeedleGL *needleGL;
     IBOutlet UIButton *menuButton;
     UIButton *startButton;
-    HistoryView *historyView;
+//    HistoryView *historyView;
 }
 
-@property (nonatomic, retain) IBOutlet HistoryView *historyView;
+//@property (nonatomic, retain) IBOutlet HistoryView *historyView;
 @property (nonatomic, retain) IBOutlet NeedleGL *needleGL;
 @property (nonatomic, retain) IBOutlet UIView *mainView;
 @property (nonatomic, retain) IBOutlet UIButton *menuButton;

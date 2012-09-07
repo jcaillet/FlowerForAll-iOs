@@ -222,7 +222,6 @@
 		D77B109B140FC5A600897203 /* icon_contents_page_unselected.png in Resources */ = {isa = PBXBuildFile; fileRef = D77B1097140FC5A600897203 /* icon_contents_page_unselected.png */; };
 		D77B109C140FC5A600897203 /* RSPageControl.m in Sources */ = {isa = PBXBuildFile; fileRef = D77B1099140FC5A600897203 /* RSPageControl.m */; };
 		D7A9942B14165763000AA64A /* VolcanoApp-Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = D7A9942914165763000AA64A /* VolcanoApp-Icon.png */; };
-		D7ABFF88140B8227003B9F08 /* HistoryView.m in Sources */ = {isa = PBXBuildFile; fileRef = D7ABFF86140B8227003B9F08 /* HistoryView.m */; };
 		D7AD2ADC14174CA2004C6034 /* VolcanoApp_burst.png in Resources */ = {isa = PBXBuildFile; fileRef = D7AD2ADB14174CA2004C6034 /* VolcanoApp_burst.png */; };
 		D7D64652141659B700F0DE4F /* VolcanoApp_explosion.wav in Resources */ = {isa = PBXBuildFile; fileRef = D7D64651141659B700F0DE4F /* VolcanoApp_explosion.wav */; };
 		D7F59A6914286D06006FE244 /* PickerEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = 4E318D021421FB8C009E0FE1 /* PickerEditor.m */; };
@@ -1631,7 +1630,6 @@
 				4EFC3EC01406837D002F0BF7 /* ParametersManager.m in Sources */,
 				4E2F50001407D1F900C4C00C /* VolcanoApp.m in Sources */,
 				4E2F50071407DF8200C4C00C /* FLAPIBlow.m in Sources */,
-				D7ABFF88140B8227003B9F08 /* HistoryView.m in Sources */,
 				4E584855140E61CC003892DA /* BlowHistory.m in Sources */,
 				D77B109C140FC5A600897203 /* RSPageControl.m in Sources */,
 				4EBFFD611414CD4300D4BE9C /* FLAPIExercice.m in Sources */,

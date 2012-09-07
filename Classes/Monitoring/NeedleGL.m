@@ -34,6 +34,9 @@
 @synthesize animationTimer;
 //@synthesize animationInterval;
 
+float lastExerciceStartTimeStamp = 0;
+float lastExerciceStopTimeStamp = 0;
+
 // You must implement this method
 + (Class)layerClass {
     return [CAEAGLLayer class];
@@ -70,13 +73,38 @@
                                                      name:UIApplicationWillResignActiveNotification 
                                                    object:nil];
         
-        
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(applicationDidBecomeActive:)
                                                      name:UIApplicationDidBecomeActiveNotification 
                                                    object:nil];
         
+        // Listen to FLAPIX events
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(eventFlapixStarted:)
+                                                     name:FLAPIX_EVENT_START object:nil];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(flapixEventEndBlow:)
+                                                     name:FLAPIX_EVENT_BLOW_STOP object:nil];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(flapixEventExerciceStart:)
+                                                     name:FLAPIX_EVENT_EXERCICE_START object:nil];
+        
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(flapixEventExerciceStop:)
+                                                     name:FLAPIX_EVENT_EXERCICE_STOP object:nil];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(flapixEventFrequency:)
+                                                     name:FLAPIX_EVENT_FREQUENCY object:nil];
+        
         animationInterval = 1.0 / 60.0;
+        historyDuration = 2; // 1 minutes
+        history = [[BlowHistory alloc] initWithDuration:historyDuration delegate:self];
+        higherBar = [history longestDuration];
+        
 		[self setupView];
 		[self startAnimation];
     }
@@ -84,6 +112,28 @@
     return self;
 }
 
+const GLfloat historyCenterX = -7.0f, historyCenterY = -1.0f, historyCenterZ = 0.0f;
+const GLfloat needleCenterX = -9.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
+
+- (void)setupView {
+	
+    const GLfloat zNear = 0.1, zFar = 1000.0, fieldOfView = 35.0;
+    
+    GLfloat size;
+    GLfloat ratio;
+	
+    glEnable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    size = zNear * tanf(DEGREES_TO_RADIANS(fieldOfView) / 2.0);
+    
+	// The size of the UIView
+    CGRect rect = self.bounds;
+	ratio = rect.size.width / rect.size.height;
+    glFrustumf(-size*ratio, size*ratio, -size, size, zNear, zFar);
+    glViewport(0, 0, rect.size.width, rect.size.height);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+      
+}
 
 - (void)applicationWillResignActive:(NSNotification *)notification {
     [self stopAnimation];
@@ -93,24 +143,45 @@
     [self startAnimation];
 }
 
-const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
+- (void)eventFlapixStarted:(NSNotification *)notification {
+    NSLog(@"HISTORY VIEW flapix started");
+    [self startAnimation];
+}
 
-- (void)setupView {
-	
-    const GLfloat zNear = 0.1, zFar = 1000.0, fieldOfView = 35.0;
+- (void)flapixEventEndBlow:(NSNotification *)notification {
+	FLAPIBlow* blow = (FLAPIBlow*)[notification object];
+//    if ([[FlowerController currentFlapix] exerciceInCourse]) {
+//        int p = (int)([[[FlowerController currentFlapix] currentExercice] percent_done]*100);
+//        [labelPercent setText:[NSString stringWithFormat:@"%i%%",p]];
+//    } else {
+//        [labelPercent setText:@"---"];
+//    }
+//    [labelFrequency setText:[NSString stringWithFormat:@"%iHz",(int)blow.medianFrequency]];
+//    [labelDuration setText:[NSString stringWithFormat:@"%.2lf sec",blow.in_range_duration]];
     
-    GLfloat size;
-	
-    glEnable(GL_DEPTH_TEST);
-    glMatrixMode(GL_PROJECTION);
-    size = zNear * tanf(DEGREES_TO_RADIANS(fieldOfView) / 2.0);
-	
-	// The size of the UIView
-    CGRect rect = self.bounds;
-    glFrustumf(-size, size, -size / (rect.size.width / rect.size.height), size / (rect.size.width / rect.size.height), zNear, zFar);
-    glViewport(0, 0, rect.size.width, rect.size.height);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-      
+    //Resize Y axis if needed
+    if (blow.duration > higherBar) {
+        higherBar = blow.duration;
+//        plotSpace.yRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(0) length:CPTDecimalFromDouble(higherBar*1.5)];
+    }
+}
+
+- (void)flapixEventExerciceStart:(NSNotification *)notification {
+    lastExerciceStartTimeStamp = [(FLAPIExercice*)[notification object] start_ts];
+    higherBar = [history longestDuration];
+}
+
+- (void)flapixEventExerciceStop:(NSNotification *)notification {
+    lastExerciceStopTimeStamp = [(FLAPIExercice*)[notification object] stop_ts];
+}
+
+- (void)flapixEventFrequency:(NSNotification *)notification {
+//    if ([[FlowerController currentFlapix] exerciceInCourse]) {
+//        int p = (int)([[[FlowerController currentFlapix] currentExercice] percent_done]*100);
+//        [labelPercent setText:[NSString stringWithFormat:@"%i%%",p]];
+//    } else {
+//        [labelPercent setText:@"---"];
+//    }
 }
 
 - (void)drawLine:(float)x1 y1:(float)y1  z1:(float)z1 x2:(float)x2 y2:(float)y2 z2:(float)z2 {
@@ -118,17 +189,11 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
         x1, y1, z1,                  
         x2, y2, z2,                  
     };
-//	NSLog(@"line %f,%f,%f %f,%f,%f",lineVertices[0],lineVertices[1],lineVertices[2],lineVertices[3],lineVertices[4],lineVertices[5]);	
-	
-	// line
-	
 	glVertexPointer(3, GL_FLOAT, 0, lineVertices);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glDrawArrays(GL_LINES, 0, 2);
 	
 }
-
-
 
 - (void)drawBox:(float)x1 y1:(float)y1 x2:(float)x2 y2:(float)y2 z:(float)z {
 	const GLfloat quadVertices[] = {
@@ -143,9 +208,67 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
 	
 }
 
+-(void) historyChange:(id*) history_id {
+    
+}
 
+-(void) reloadFromDB {
+    [history reloadFromDB];
+}
 
-- (void)drawView {
+- (void)drawHistory {
+    // --- start drawing ---
+    [EAGLContext setCurrentContext:context];    
+    glBindFramebufferOES(GL_FRAMEBUFFER_OES, viewFramebuffer);
+    glViewport(0, 0, backingWidth, backingHeight);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
+    // --- draw axis ---
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    glTranslatef(historyCenterX,historyCenterY,historyCenterZ);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    [self drawLine:0.0 y1:0.0 z1:-5.0 x2:12.0  y2:0.0  z2:-5.0]; // X
+    [self drawLine:0.0 y1:0.0 z1:-5.0 x2:0.0  y2:4.0  z2:-5.0]; // Y
+    
+    // --- draw bars ---
+    int count = [[history getHistoryArray] count];
+    NSLog(@"count = %d", count);
+    for (int index = 0; index < count; index++) {
+        FLAPIBlow* current = [[history getHistoryArray] objectAtIndex:index];
+        double d2 = current.timestamp - CFAbsoluteTimeGetCurrent();
+        double inRange = [[ NSNumber numberWithDouble:current.in_range_duration ] doubleValue ];
+        double tot = [[ NSNumber numberWithDouble:current.duration ] doubleValue ];
+        
+        NSLog(@"d2 / inRange / tot = %f / %f / %f", d2, inRange, tot);
+        
+        // draw in range duration
+        glLoadIdentity();
+        glTranslatef(historyCenterX,historyCenterY,historyCenterZ);
+        glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+        [self drawBox:0.0 y1:0.0 x2:1.0 y2:8.0 z:-5.0];
+        
+        // draw total blow duration
+        glLoadIdentity();
+        glTranslatef(historyCenterX,historyCenterY,historyCenterZ);
+        glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+        [self drawBox:0.0 y1:0.0 x2:1.0 y2:10.0 z:-5.0];
+    }
+    
+    // TODO
+    // - above drawBox : compute x2 attribute in relation with d2
+    // - above drawBox : compute y2 attribute in relation with respectively inRange and tot
+    // - draw star
+    // - draw isStart and isStop
+    // - drw goalLine
+    
+    // --- end drawing ---
+    glBindRenderbufferOES(GL_RENDERBUFFER_OES, viewRenderbuffer);
+    [context presentRenderbuffer:GL_RENDERBUFFER_OES];
+}
+
+- (void)drawNeedle {
     FLAPIX* flapix = [FlowerController currentFlapix];
     if (flapix == nil) return;
     
@@ -178,11 +301,9 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
     
     /*************** Drawing code ******************/
     
-    
     [EAGLContext setCurrentContext:context];    
     glBindFramebufferOES(GL_FRAMEBUFFER_OES, viewFramebuffer);
     glViewport(0, 0, backingWidth, backingHeight);
-
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -191,7 +312,6 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
     glLoadIdentity();
     
     glTranslatef(needleCenterX,needleCenterY,needleCenterZ);
-    
     
     //glRotatef(angle_freqMax, 0.0f, 0.0f, -1.0f);
     static float hPos = 0;
@@ -270,13 +390,10 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
         glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     
     
-    
-    
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     
-     glTranslatef(needleCenterX,needleCenterY,needleCenterZ);
-    
+    glTranslatef(needleCenterX,needleCenterY,needleCenterZ);
     
     glRotatef(angle_freqMax, 0.0f, 0.0f, -1.0f);
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -302,7 +419,7 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
     [EAGLContext setCurrentContext:context];
     [self destroyFramebuffer];
     [self createFramebuffer];
-    [self drawView];
+    [self drawNeedle];
 }
 
 
@@ -350,12 +467,22 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
 
 
 - (void)startAnimation {
-    self.animationTimer = [NSTimer scheduledTimerWithTimeInterval:animationInterval target:self selector:@selector(drawView) userInfo:nil repeats:YES];
+    if ([FlowerController currentFlapix] == nil || ! [[FlowerController currentFlapix] running]) return;
+    self.animationTimer = [NSTimer scheduledTimerWithTimeInterval:animationInterval target:self selector:@selector(timerFireMethod:) userInfo:nil repeats:YES];
 }
 
 
 - (void)stopAnimation {
+    [self.animationTimer invalidate];
     self.animationTimer = nil;
+}
+
+- (void)timerFireMethod:(NSTimer*)theTimer {
+    if (! [[FlowerController currentFlapix] running]) [self stopAnimation];
+    [self drawNeedle]; // needle view
+    @synchronized([history getHistoryArray]) {
+        [self drawHistory]; // needle view
+    }
 }
 
 
@@ -435,6 +562,8 @@ const GLfloat needleCenterX = 0.0f, needleCenterY = -1.0f, needleCenterZ = 0.0f;
         [EAGLContext setCurrentContext:nil];
     }
     
+    [animationTimer release];
+    [history release];
     [context release];  
     [super dealloc];
 }
